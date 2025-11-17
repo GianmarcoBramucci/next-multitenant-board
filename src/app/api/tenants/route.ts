@@ -4,6 +4,8 @@ import { requireAuth } from '@/lib/auth';
 import { tenantService } from '@/core/services/tenantService';
 import { ok, unauthorized, internalServerError } from '@/lib/api-response';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const user = await requireAuth();
