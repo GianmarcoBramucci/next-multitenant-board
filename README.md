@@ -1,124 +1,104 @@
-# Multi-Tenant Kanban Board - Real-Time Collaboration
+﻿# Multi-Tenant Kanban Board - Technical Architecture
 
-Un'applicazione Kanban multi-tenant completa con aggiornamenti real-time tramite Server-Sent Events (SSE).
+This README explains how each layer of the application behaves. The focus is on runtime flow and responsibilities rather than setup.
 
-## 🎯 Funzionalità Principali
+## 1. System Overview
+- Runtime: Next.js 14 App Router on Node.js 20 with TypeScript.
+- Persistence: PostgreSQL through Prisma (see prisma/schema.prisma).
+- Authentication: NextAuth credentials provider with helpers in src/lib/auth.ts.
+- Real-time transport: custom Server-Sent Events (SSE) pipeline.
+- UI: React components rendered via App Router layouts and Tailwind utility classes.
 
-### ✅ Multi-Tenancy Completo
-- **Isolamento dati per organizzazione**: ogni tenant (organizzazione) ha i propri dati completamente isolati
-- **Gestione ruoli**: Owner, Admin, Member con permessi differenziati
-- **Owner privileges**: il creatore della prima organizzazione diventa automaticamente owner
-
-### ✅ Autenticazione Sicura
-- NextAuth con provider Credentials (email/password)
-- Password hashate con bcrypt
-- Sessioni JWT sicure
-- Registrazione con creazione automatica tenant
-
-### ✅ Board Management con Permessi
-- **Creazione board**: tutti i membri possono creare board
-- **Modifica board**: solo il creatore o gli owner possono modificare
-- **Eliminazione board**: solo il creatore o gli owner possono eliminare
-- **Real-time updates**: modifiche ed eliminazioni si riflettono istantaneamente su tutti i client connessi
-
-### ✅ Kanban Board Real-Time
-- 3 colonne: TODO, IN_PROGRESS, DONE
-- **CRUD completo todo**:
-  - Creazione task in tempo reale
-  - Modifica titolo, descrizione, status
-  - Eliminazione task
-  - Cambio status visuale
-- **Real-time collaboration**: tutti gli utenti vedono istantaneamente le modifiche degli altri
-
-### ✅ SSE (Server-Sent Events) Implementato
-- Sistema SSE personalizzato senza dipendenze esterne
-- Eventi supportati:
-  - `TODO_CREATED`: nuovo task creato
-  - `TODO_UPDATED`: task modificato
-  - `TODO_DELETED`: task eliminato
-  - `TODO_STATUS_CHANGED`: status task cambiato
-  - `BOARD_UPDATED`: board modificata
-  - `BOARD_DELETED`: board eliminata
-- Riconnessione automatica in caso di disconnessione
-- Keep-alive ping ogni 30 secondi
-
-## 🏗️ Architettura
-
-### Layer Separati (Clean Architecture)
-1. **Domain Layer**: modelli e logica pura
-2. **Repository Layer**: accesso dati
-3. **Service Layer**: business logic
-4. **Transport Layer**: API HTTP + SSE endpoints
-5. **UI Layer**: React components
-
-### Stack Tecnico
-- **Runtime**: Node.js 20+
-- **Framework**: Next.js 14 (App Router) + TypeScript
-- **Database**: PostgreSQL (Supabase)
-- **ORM**: Prisma
-- **Auth**: NextAuth (Auth.js)
-- **Real-time**: SSE (implementazione custom)
-- **Validazione**: Zod
-- **UI**: React + Tailwind CSS
-
-## 🚀 Setup e Avvio
-
-### 1. Prerequisiti
-- Node.js 20+
-- Database PostgreSQL su Supabase (già configurato)
-
-### 2. Installazione
-```bash
-npm install
+```
+Browser (fetch + EventSource)
+     ||
+API Route Handlers (src/app/api/**)
+     ||
+Services (src/core/services/**)
+     ||
+Repositories (src/core/repositories/**) -> Prisma Client -> PostgreSQL
+       \
+        SSE Registry (src/lib/sse/boardStreamRegistry.ts)
 ```
 
-### 3. Configurazione Database
-```bash
-# Genera Prisma Client
-npm run db:generate
-```
+## 2. Transport Layer (HTTP + SSE)
+### HTTP handlers
+- Located under src/app/api.
+- Each handler:
+  1. Reads dynamic params (tenantSlug, boardId, todoId).
+  2. Calls requireAuth() to resolve the current user.
+  3. Uses helpers from src/lib/tenant.ts to verify membership and roles.
+  4. Validates the payload with the relevant Zod schema in src/lib/validation.
+  5. Invokes the correct service.
+- Protected routes export `dynamic = 'force-dynamic'` so Next.js never prerenders them.
 
-### 4. Avvio Applicazione
-```bash
-# Sviluppo
-npm run dev
+### SSE handlers
+- src/app/api/stream/boards/[boardId]/route.ts exposes board level events.
+- src/app/api/stream/tenants/[tenantSlug]/route.ts exposes tenant level events.
+- Flow for both handlers:
+  - Authenticate and check membership before opening a stream.
+  - Create a ReadableStream whose controller is registered inside the SSE registry.
+  - Attach request.signal abort listeners to clean up and close the controller.
+  - Return `Response(stream, { headers: { 'Content-Type': 'text/event-stream', ... } })` and set `export const runtime = 'nodejs'`.
 
-# Build production
-npm run build
-npm start
-```
+## 3. Service Layer (src/core/services)
+- boardService: enforces membership and role checks, validates unique board names per tenant, performs CRUD through boardRepository, and emits boardCreated/boardUpdated/boardDeleted events.
+- todoService: validates access to the target board, executes CRUD through todoRepository, and emits todo specific events so Kanban clients stay in sync.
+- tenantService: coordinates tenant creation, user onboarding, and membership assignments.
+- Services are the only layer allowed to trigger SSE broadcasts and to map domain models into DTOs returned by handlers.
 
-L'app sarà disponibile su `http://localhost:3000`
+## 4. Repository Layer (src/core/repositories)
+- Wraps Prisma Client into intent revealing functions such as findByTenantId, existsByNameAndTenant, update, delete, etc.
+- Contains zero business logic: repositories only read and write data.
+- Switching the datastore or optimizing queries touches only this layer.
 
-## 📖 Come Usare
+## 5. Domain Models, DTOs, Validation
+- Domain models live in src/core/domain/models and describe Board, Todo, Tenant, UserTenant.
+- DTO definitions in src/types/dto determine what is sent to the client (BoardSummary, TodoItem, TenantSummary).
+- Zod schemas in src/lib/validation catch malformed input at the API boundary before anything hits business logic.
 
-### Registrazione
-1. Vai su `/register`
-2. Inserisci: email, password, nome, nome organizzazione
-3. Diventi automaticamente **owner** della tua organizzazione
+## 6. Authentication and Authorization
+- src/lib/auth.ts exposes getCurrentUser() and requireAuth() around NextAuth sessions.
+- src/lib/tenant.ts centralizes helpers such as requireTenantBySlug, requireUserMembership, checkUserRole, getUserRole.
+- Permission model: only creators or owners can update or delete boards; members can read and create within their tenant but cannot remove what others created.
 
-### Gestione Board
-- Crea board dalla dashboard
-- Modifica/elimina (solo se sei creatore o owner)
+## 7. SSE Infrastructure
+### Registry
+- Implemented in src/lib/sse/boardStreamRegistry.ts.
+- Tracks active board level connections and tenant level connections. Each entry stores connection id, user id, target id, controller, and heartbeat interval.
+- Provides methods register, registerTenant, broadcast, broadcastToTenant, unregister, unregisterTenant.
 
-### Task Real-Time
-- Crea task in qualsiasi colonna
-- Modifica status, titolo, descrizione
-- **Apri in 2 browser per vedere gli aggiornamenti real-time!**
+### Event flow
+1. API handler calls a service function.
+2. Service mutates state through the repository layer.
+3. Service builds an event payload via createBoardEvent or createTodoEvent.
+4. Service calls boardStreamRegistry.broadcast*.
+5. Registry pushes serialized SSE messages onto every matching controller.
+6. Clients subscribed via EventSource receive the payload and update local state without polling.
 
-## 🔐 Sicurezza
-- ✅ Password hashate con bcrypt
-- ✅ Row-level security (filtraggio per tenantId)
-- ✅ Controllo permessi granulare
-- ✅ Validazione Zod su tutti gli input
+## 8. Frontend Execution Model
+- Server components under src/app/... load initial data using the same services (e.g., src/app/app/[tenantSlug]/boards/page.tsx).
+- Client components:
+  - BoardsList handles board CRUD UI, uses ConfirmDialog for destructive actions, and subscribes to tenant level SSE to keep the list synchronized.
+  - KanbanBoard renders the TODO/IN_PROGRESS/DONE columns and listens to board level events.
+  - TodoCard offers inline status changes through the Select component, shows toast notifications, and reuses ConfirmDialog for task deletion.
+- State management: local React state plus SSE listeners; no global store required, the server remains the source of truth.
+- Styling: Tailwind utility classes plus CSS variables defined in src/app/globals.css for consistent colors, surfaces, and typography.
 
-## 🎨 Features Completate
-✅ Multi-tenant completo
-✅ Autenticazione NextAuth
-✅ CRUD board con permessi
-✅ CRUD todo real-time
-✅ SSE per collaboration
-✅ Kanban 3 colonne
-✅ Permissions system
-✅ TypeScript strict
-✅ Clean Architecture.
+## 9. Error Handling and Security
+- src/lib/api-response.ts exports helpers (ok, created, badRequest, forbidden, internalServerError, etc.) so handlers respond consistently.
+- Critical failures log context aware messages (for example, `[Create Board Error]`).
+- Every Prisma query that touches tenant data filters by tenantId or membership to enforce isolation.
+- Passwords are hashed with bcrypt during registration inside tenantService before persisting users.
+
+## 10. Build and Deploy Notes
+- `npm run build` is defined as `prisma generate && next build` to regenerate Prisma Client before bundling (important on Vercel caches).
+- SSE routes set both `runtime = 'nodejs'` and `dynamic = 'force-dynamic'` so long lived connections keep working and sessions remain available.
+
+## 11. Example Flow: delete todo
+1. User confirms deletion inside TodoCard.
+2. Component issues fetchDelete to `/api/{tenant}/boards/{board}/todos/{todo}`.
+3. Handler authenticates, validates, and calls todoService.deleteTodo.
+4. Service checks membership, removes the row via todoRepository, and creates a todoDeleted event.
+5. boardStreamRegistry.broadcast(boardId, event) writes onto every board level stream.
+6. Each KanbanBoard subscribed to that board receives the event and removes the todo locally in real time.
