@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { TodoStatus } from '@/core/domain/models';
+import { fetchPost } from '@/lib/fetch-wrapper';
+import { useToast } from './Toast';
 
 interface CreateTodoFormProps {
   boardId: string;
@@ -18,6 +20,7 @@ export default function CreateTodoForm({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const { showToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,28 +30,21 @@ export default function CreateTodoForm({
     setIsCreating(true);
 
     try {
-      const response = await fetch(
+      await fetchPost(
         `/api/${tenantSlug}/boards/${boardId}/todos`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: title.trim(),
-            description: description.trim() || undefined,
-            status,
-          }),
+          title: title.trim(),
+          description: description.trim() || undefined,
+          status,
         }
       );
 
-      if (response.ok) {
-        setTitle('');
-        setDescription('');
-        setShowForm(false);
-      } else {
-        console.error('Failed to create todo');
-      }
-    } catch (error) {
-      console.error('Error creating todo:', error);
+      // Success
+      setTitle('');
+      setDescription('');
+      setShowForm(false);
+    } catch (error: any) {
+      showToast(error.message || 'Errore nella creazione del task', 'error');
     } finally {
       setIsCreating(false);
     }

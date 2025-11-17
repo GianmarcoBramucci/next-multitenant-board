@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { TodoItem } from '@/types/dto/todo';
 import { BoardEvent } from '@/lib/sse/events';
+
+export type SSEConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
 interface UseBoardSSEOptions {
   boardId: string;
@@ -25,6 +27,7 @@ export function useBoardSSE({
 }: UseBoardSSEOptions) {
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const [connectionStatus, setConnectionStatus] = useState<SSEConnectionStatus>('connecting');
 
   const handleMessage = useCallback(
     (event: MessageEvent) => {
@@ -73,11 +76,13 @@ export function useBoardSSE({
     }
 
     console.log('[SSE] Connecting to board:', boardId);
+    setConnectionStatus('connecting');
 
     const eventSource = new EventSource(`/api/stream/boards/${boardId}`);
 
     eventSource.onopen = () => {
       console.log('[SSE] Connection OPENED successfully for board:', boardId);
+      setConnectionStatus('connected');
     };
 
     eventSource.onmessage = handleMessage;
@@ -86,6 +91,7 @@ export function useBoardSSE({
       console.error('[SSE] Connection ERROR for board:', boardId, error);
       console.log('[SSE] EventSource readyState:', eventSource.readyState);
 
+      setConnectionStatus('error');
       eventSource.close();
       eventSourceRef.current = null;
 
@@ -109,6 +115,7 @@ export function useBoardSSE({
       console.log('[SSE] Disconnecting');
       eventSourceRef.current.close();
       eventSourceRef.current = null;
+      setConnectionStatus('disconnected');
     }
   }, []);
 
@@ -120,5 +127,5 @@ export function useBoardSSE({
     };
   }, [connect, disconnect]);
 
-  return { disconnect };
+  return { disconnect, connectionStatus };
 }

@@ -19,7 +19,13 @@ export const tenantService = {
     // Check if user already exists
     const existingUser = await userRepository.findByEmail(data.email);
     if (existingUser) {
-      throw new Error('User with this email already exists');
+      throw new Error('Un utente con questa email esiste già');
+    }
+
+    // Check if tenant name already exists (case insensitive)
+    const existingTenantByName = await tenantRepository.findByName(data.tenantName);
+    if (existingTenantByName) {
+      throw new Error('Un\'organizzazione con questo nome esiste già. Scegli un nome diverso.');
     }
 
     // Create slug from tenant name
@@ -72,13 +78,13 @@ export const tenantService = {
     // Check if user already exists
     const existingUser = await userRepository.findByEmail(data.email);
     if (existingUser) {
-      throw new Error('User with this email already exists');
+      throw new Error('Un utente con questa email esiste già');
     }
 
     // Find tenant by slug
     const tenant = await tenantRepository.findBySlug(data.tenantSlug);
     if (!tenant) {
-      throw new Error('Organization not found');
+      throw new Error('Organizzazione non trovata. Verifica il codice di invito.');
     }
 
     // Hash password

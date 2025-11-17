@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import { FetchError } from '@/lib/fetch-wrapper';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -34,10 +35,18 @@ export default function RegisterPage() {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        setError(data.error || 'Registration failed');
+        // Parse error message
+        let errorMessage = 'Registrazione fallita';
+        try {
+          const data = await response.json();
+          errorMessage = data.error || data.message || errorMessage;
+        } catch {
+          // Se il parsing JSON fallisce, usa il messaggio di default
+          errorMessage = `Errore ${response.status}: ${response.statusText}`;
+        }
+
+        setError(errorMessage);
         setLoading(false);
         return;
       }
@@ -50,14 +59,19 @@ export default function RegisterPage() {
       });
 
       if (signInResult?.error) {
-        setError('Registration successful, but login failed. Please login manually.');
+        setError('Registrazione completata, ma il login automatico è fallito. Accedi manualmente.');
         setLoading(false);
       } else {
         router.push('/app');
         router.refresh();
       }
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      console.error('Registration error:', err);
+      if (err instanceof FetchError) {
+        setError(err.message);
+      } else {
+        setError('Si è verificato un errore. Riprova più tardi.');
+      }
       setLoading(false);
     }
   };

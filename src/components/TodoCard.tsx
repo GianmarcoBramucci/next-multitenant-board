@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { TodoItem } from '@/types/dto/todo';
 import { TodoStatus } from '@/core/domain/models';
+import { fetchPatch, fetchDelete } from '@/lib/fetch-wrapper';
+import { useToast } from './Toast';
 
 interface TodoCardProps {
   todo: TodoItem;
@@ -19,6 +21,7 @@ const STATUS_OPTIONS: { value: TodoStatus; label: string }[] = [
 export default function TodoCard({ todo, boardId, tenantSlug }: TodoCardProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { showToast } = useToast();
 
   const handleStatusChange = async (newStatus: TodoStatus) => {
     if (newStatus === todo.status || isUpdating) return;
@@ -26,44 +29,27 @@ export default function TodoCard({ todo, boardId, tenantSlug }: TodoCardProps) {
     setIsUpdating(true);
 
     try {
-      const response = await fetch(
+      await fetchPatch(
         `/api/${tenantSlug}/boards/${boardId}/todos/${todo.id}`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus }),
-        }
+        { status: newStatus }
       );
-
-      if (!response.ok) {
-        console.error('Failed to update todo status');
-      }
-    } catch (error) {
-      console.error('Error updating todo:', error);
+    } catch (error: any) {
+      showToast(error.message || 'Errore nell\'aggiornamento del task', 'error');
     } finally {
       setIsUpdating(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+    if (!confirm('Sei sicuro di voler eliminare questo task?')) return;
 
     setIsDeleting(true);
 
     try {
-      const response = await fetch(
-        `/api/${tenantSlug}/boards/${boardId}/todos/${todo.id}`,
-        {
-          method: 'DELETE',
-        }
-      );
-
-      if (!response.ok) {
-        console.error('Failed to delete todo');
-        setIsDeleting(false);
-      }
-    } catch (error) {
-      console.error('Error deleting todo:', error);
+      await fetchDelete(`/api/${tenantSlug}/boards/${boardId}/todos/${todo.id}`);
+      // Success - SSE will update UI automatically
+    } catch (error: any) {
+      showToast(error.message || 'Errore nell\'eliminazione del task', 'error');
       setIsDeleting(false);
     }
   };
