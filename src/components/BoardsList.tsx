@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { BoardSummary } from '@/types/dto/board';
 import { useTenantSSE } from '@/hooks/useTenantSSE';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { Input } from './ui/Input';
+import { Button } from './ui/Button';
 
 interface BoardsListProps {
   initialBoards: BoardSummary[];
@@ -107,17 +109,13 @@ export default function BoardsList({ initialBoards, tenantSlug, currentUserId, u
   };
 
   const closeDeleteDialog = () => {
-    if (isDeleting) {
-      return;
-    }
+    if (isDeleting) return;
     setBoardToDelete(null);
     setDeleteError('');
   };
 
   const handleDeleteConfirm = async () => {
-    if (!boardToDelete || isDeleting) {
-      return;
-    }
+    if (!boardToDelete || isDeleting) return;
 
     setIsDeleting(true);
     setDeleteError('');
@@ -203,148 +201,281 @@ export default function BoardsList({ initialBoards, tenantSlug, currentUserId, u
 
   return (
     <>
-      <div>
-      <div className="mb-6">
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          {showForm ? 'Cancel' : 'Create Board'}
-        </button>
-      </div>
-
-      {showForm && (
-        <div className="mb-6 bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Create New Board</h3>
-          <form onSubmit={handleCreate} className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
+      <div className="space-y-6">
+        {/* Header with Create Button */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              Boards
+            </h2>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+              Manage your workspace boards and tasks
+            </p>
+          </div>
+          <Button
+            onClick={() => setShowForm(!showForm)}
+            variant={showForm ? 'outline' : 'primary'}
+          >
+            {showForm ? (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Cancel
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Create Board
+              </>
             )}
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Board Name
-              </label>
-              <input
+          </Button>
+        </div>
+
+        {/* Create Form */}
+        {showForm && (
+          <div
+            className="rounded-2xl p-6 border animate-slide-in"
+            style={{
+              background: 'var(--surface)',
+              borderColor: 'var(--border)',
+              boxShadow: 'var(--shadow-lg)'
+            }}
+          >
+            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+              Create New Board
+            </h3>
+            <form onSubmit={handleCreate} className="space-y-4">
+              {error && (
+                <div className="rounded-lg p-4" style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca' }}>
+                  <p className="text-sm font-medium" style={{ color: 'var(--error)' }}>{error}</p>
+                </div>
+              )}
+
+              <Input
+                label="Board Name"
                 type="text"
-                id="name"
-                required
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Marketing Campaign 2024"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 disabled={isCreating}
+                required
+                fullWidth
               />
-            </div>
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description (optional)
-              </label>
-              <textarea
-                id="description"
-                rows={3}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                disabled={isCreating}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={isCreating}
-              className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isCreating ? 'Creating...' : 'Create Board'}
-            </button>
-          </form>
-        </div>
-      )}
 
-      {boards.length === 0 ? (
-        <div className="text-center py-12">
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No boards</h3>
-          <p className="mt-1 text-sm text-gray-500">Get started by creating a new board.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {boards.map((board) => (
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                  Description (optional)
+                </label>
+                <textarea
+                  rows={3}
+                  className="w-full px-4 py-2.5 text-sm rounded-lg resize-none"
+                  style={{
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                    backgroundColor: 'var(--surface)'
+                  }}
+                  placeholder="Track all tasks for our Q1 marketing campaign..."
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  disabled={isCreating}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" isLoading={isCreating} fullWidth>
+                  {isCreating ? 'Creating...' : 'Create Board'}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  variant="ghost"
+                  disabled={isCreating}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Boards Grid */}
+        {boards.length === 0 ? (
+          <div
+            className="text-center py-16 rounded-2xl border-2 border-dashed"
+            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-hover)' }}
+          >
             <div
-              key={board.id}
-              className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex flex-col hover:border-gray-400"
+              className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ backgroundColor: 'var(--surface)' }}
             >
-              {editingBoard === board.id ? (
-                <form onSubmit={(e) => handleEdit(board.id, e)} className="space-y-3">
-                  <div>
-                    <input
+              <svg className="w-10 h-10" style={{ color: 'var(--text-tertiary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+              No boards yet
+            </h3>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+              Get started by creating your first board
+            </p>
+            <Button onClick={() => setShowForm(true)}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Create Your First Board
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {boards.map((board) => (
+              <div
+                key={board.id}
+                className="group rounded-2xl p-6 border transition-all duration-200 hover:scale-[1.02]"
+                style={{
+                  background: 'var(--surface)',
+                  borderColor: 'var(--border)',
+                  boxShadow: 'var(--shadow-sm)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                }}
+              >
+                {editingBoard === board.id ? (
+                  <form onSubmit={(e) => handleEdit(board.id, e)} className="space-y-4">
+                    <Input
                       type="text"
                       value={editFormData.name}
                       onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                       required
+                      fullWidth
                       autoFocus
                     />
-                  </div>
-                  <div>
                     <textarea
                       value={editFormData.description}
                       onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      className="w-full px-3 py-2 text-sm rounded-lg resize-none"
+                      style={{
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-primary)',
+                        backgroundColor: 'var(--surface)'
+                      }}
                       rows={2}
                     />
-                  </div>
-                  <div className="flex space-x-2">
-                    <button
-                      type="submit"
-                      className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                    >
-                      Save
-                    </button>
-                    <button
-                      type="button"
-                      onClick={cancelEditing}
-                      className="px-3 py-1 text-xs bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <>
-                  <Link
-                    href={`/app/${tenantSlug}/boards/${board.id}`}
-                    className="flex-1"
-                  >
-                    <h3 className="text-lg font-medium text-gray-900">{board.name}</h3>
-                    {board.description && (
-                      <p className="mt-2 text-sm text-gray-500 line-clamp-2">{board.description}</p>
-                    )}
-                    <p className="mt-2 text-xs text-gray-400">
-                      Created by {board.createdBy.displayName}
-                    </p>
-                  </Link>
-                  {canModifyBoard(board) && (
-                    <div className="mt-3 flex space-x-2">
-                      <button
-                        onClick={(e) => startEditing(board, e)}
-                        className="px-3 py-1 text-xs bg-yellow-500 text-white rounded hover:bg-yellow-600"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={(e) => openDeleteDialog(board, e)}
-                        className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
-                      >
-                        Delete
-                      </button>
+                    <div className="flex gap-2">
+                      <Button type="submit" size="sm" fullWidth>Save</Button>
+                      <Button type="button" onClick={cancelEditing} variant="ghost" size="sm">Cancel</Button>
                     </div>
-                  )}
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+                  </form>
+                ) : (
+                  <>
+                    <Link href={`/app/${tenantSlug}/boards/${board.id}`} className="block flex-1">
+                      {/* Board Icon & Name */}
+                      <div className="flex items-start gap-3 mb-3">
+                        <div
+                          className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                          style={{
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                          }}
+                        >
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-lg mb-1 truncate" style={{ color: 'var(--text-primary)' }}>
+                            {board.name}
+                          </h3>
+                          <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            <span>{board.todosCount || 0} tasks</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      {board.description && (
+                        <p className="text-sm mb-4 line-clamp-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                          {board.description}
+                        </p>
+                      )}
+
+                      {/* Creator Info */}
+                      <div className="flex items-center gap-2 pt-3 mt-3" style={{ borderTop: '1px solid var(--border)' }}>
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium"
+                          style={{
+                            backgroundColor: 'var(--primary)',
+                            color: 'white'
+                          }}
+                        >
+                          {board.createdBy.displayName.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                          {board.createdBy.displayName}
+                        </span>
+                      </div>
+                    </Link>
+
+                    {/* Action Buttons */}
+                    {canModifyBoard(board) && (
+                      <div className="flex gap-2 mt-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+                        <button
+                          onClick={(e) => startEditing(board, e)}
+                          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200"
+                          style={{
+                            backgroundColor: 'var(--surface-hover)',
+                            color: 'var(--text-secondary)'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--border)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                          }}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          Edit
+                        </button>
+                        <button
+                          onClick={(e) => openDeleteDialog(board, e)}
+                          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition-all duration-200"
+                          style={{
+                            backgroundColor: '#fee2e2',
+                            color: '#991b1b'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#fecaca';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#fee2e2';
+                          }}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         isOpen={!!boardToDelete}
         title="Delete board"

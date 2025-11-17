@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { FetchError } from '@/lib/fetch-wrapper';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -77,152 +79,171 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your account
-          </h2>
-          <div className="mt-4 flex justify-center space-x-4">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+      <div className="max-w-lg w-full">
+        {/* Logo/Brand */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4" style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)' }}>
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </div>
+          <h1 className="text-3xl font-bold text-white mb-2">Get Started</h1>
+          <p className="text-white text-opacity-90 text-sm">Create your workspace or join an existing one</p>
+        </div>
+
+        {/* Register Card */}
+        <div className="rounded-2xl p-8" style={{ background: 'var(--surface)', boxShadow: 'var(--shadow-xl)' }}>
+          {/* Mode Switcher */}
+          <div className="flex gap-2 p-1 rounded-lg mb-6" style={{ backgroundColor: 'var(--background)' }}>
             <button
               type="button"
               onClick={() => setMode('create')}
-              className={`px-4 py-2 text-sm font-medium rounded-md ${
-                mode === 'create'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              className="flex-1 px-4 py-2.5 text-sm font-medium rounded-md transition-all duration-200"
+              style={{
+                backgroundColor: mode === 'create' ? 'var(--primary)' : 'transparent',
+                color: mode === 'create' ? 'white' : 'var(--text-secondary)',
+              }}
             >
-              Create Organization
+              <div className="flex items-center justify-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Create Workspace
+              </div>
             </button>
             <button
               type="button"
               onClick={() => setMode('join')}
-              className={`px-4 py-2 text-sm font-medium rounded-md ${
-                mode === 'join'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              className="flex-1 px-4 py-2.5 text-sm font-medium rounded-md transition-all duration-200"
+              style={{
+                backgroundColor: mode === 'join' ? 'var(--primary)' : 'transparent',
+                color: mode === 'join' ? 'white' : 'var(--text-secondary)',
+              }}
             >
-              Join Existing Organization
+              <div className="flex items-center justify-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                Join Workspace
+              </div>
             </button>
           </div>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
-          <div className="rounded-md shadow-sm space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="you@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                minLength={8}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="At least 8 characters"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
-                Your Name
-              </label>
-              <input
-                id="displayName"
-                name="displayName"
-                type="text"
-                required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="John Doe"
-                value={formData.displayName}
-                onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                disabled={loading}
-              />
-            </div>
-            {mode === 'create' ? (
-              <div>
-                <label htmlFor="tenantName" className="block text-sm font-medium text-gray-700">
-                  Organization Name
-                </label>
-                <input
-                  id="tenantName"
-                  name="tenantName"
-                  type="text"
-                  required
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Acme Inc"
-                  value={formData.tenantName}
-                  onChange={(e) => setFormData({ ...formData, tenantName: e.target.value })}
-                  disabled={loading}
-                />
-              </div>
-            ) : (
-              <div>
-                <label htmlFor="tenantSlug" className="block text-sm font-medium text-gray-700">
-                  Organization Slug
-                </label>
-                <input
-                  id="tenantSlug"
-                  name="tenantSlug"
-                  type="text"
-                  required
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="acme-inc"
-                  value={formData.tenantSlug}
-                  onChange={(e) => setFormData({ ...formData, tenantSlug: e.target.value })}
-                  disabled={loading}
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Enter the organization slug (e.g., the part after /app/ in the URL)
-                </p>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="rounded-lg p-4" style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca' }}>
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--error)' }} fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  <p className="text-sm font-medium" style={{ color: 'var(--error)' }}>{error}</p>
+                </div>
               </div>
             )}
-          </div>
 
-          <div>
-            <button
-              type="submit"
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              label="Email Address"
+              placeholder="you@company.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Creating account...' : 'Register'}
-            </button>
-          </div>
+              required
+              fullWidth
+              autoComplete="email"
+            />
 
-          <div className="text-center">
-            <Link
-              href="/login"
-              className="font-medium text-blue-600 hover:text-blue-500"
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              label="Password"
+              placeholder="At least 8 characters"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              disabled={loading}
+              required
+              fullWidth
+              autoComplete="new-password"
+              helperText="Minimum 8 characters"
+            />
+
+            <Input
+              id="displayName"
+              name="displayName"
+              type="text"
+              label="Your Name"
+              placeholder="John Doe"
+              value={formData.displayName}
+              onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+              disabled={loading}
+              required
+              fullWidth
+              autoComplete="name"
+            />
+
+            {mode === 'create' ? (
+              <Input
+                id="tenantName"
+                name="tenantName"
+                type="text"
+                label="Organization Name"
+                placeholder="Acme Inc"
+                value={formData.tenantName}
+                onChange={(e) => setFormData({ ...formData, tenantName: e.target.value })}
+                disabled={loading}
+                required
+                fullWidth
+                helperText="Your workspace will be created with this name"
+              />
+            ) : (
+              <Input
+                id="tenantSlug"
+                name="tenantSlug"
+                type="text"
+                label="Organization Slug"
+                placeholder="acme-inc"
+                value={formData.tenantSlug}
+                onChange={(e) => setFormData({ ...formData, tenantSlug: e.target.value })}
+                disabled={loading}
+                required
+                fullWidth
+                helperText="The unique identifier of the workspace you're joining (e.g., acme-inc)"
+              />
+            )}
+
+            <Button
+              type="submit"
+              isLoading={loading}
+              fullWidth
+              size="lg"
+              className="mt-6"
             >
-              Already have an account? Sign in
-            </Link>
+              {loading ? 'Creating account...' : mode === 'create' ? 'Create Workspace' : 'Join Workspace'}
+            </Button>
+          </form>
+
+          <div className="mt-6 pt-6" style={{ borderTop: '1px solid var(--border)' }}>
+            <p className="text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
+              Already have an account?{' '}
+              <Link
+                href="/login"
+                className="font-semibold hover:underline"
+                style={{ color: 'var(--primary)' }}
+              >
+                Sign in
+              </Link>
+            </p>
           </div>
-        </form>
+        </div>
+
+        {/* Footer */}
+        <p className="mt-8 text-center text-sm text-white text-opacity-80">
+          Join thousands of teams collaborating efficiently
+        </p>
       </div>
     </div>
   );
